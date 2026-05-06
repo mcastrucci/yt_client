@@ -1,0 +1,100 @@
+# Compila instaladores macOS y Windows con dependencias descargadas en CI.
+# yt-dlp: https://github.com/yt-dlp/yt-dlp/releases (oficial)
+# youtube-dl (opcional, legacy): https://github.com/ytdl-org/youtube-dl/releases
+# FFmpeg Windows (tu elección): https://github.com/BtbN/FFmpeg-Builds/releases
+# FFmpeg macOS: Homebrew en el runner (encaja con Apple Silicon / Intel según imagen)
+
+name: Build desktop
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # --- Dependencias nativas (fuera de app/) ---
+      - name: Stage yt-dlp + FFmpeg (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        working-directory: ${{ github.workspace }}
+        run: |
+          New-Item -ItemType Directory -Force -Path dependencies/windows | Out-Null
+          New-Item -ItemType Directory -Force -Path dependencies/windows/bin | Out-Null
+
+          # yt-dlp oficial (siempre este enlace "latest")
+          Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" `
+            -OutFile "dependencies/windows/yt-dlp.exe"
+
+          # youtube-dl legacy (opcional; el código prueba yt-dlp primero)
+          try {
+            Invoke-WebRequest -Uri "https://github.com/ytdl-org/youtube-dl/releases/latest/download/youtube-dl.exe" `
+              -OutFile "dependencies/windows/youtube-dl.exe"
+          } catch {
+            Write-Host "youtube-dl.exe omitido: $_"
+          }
+
+          $ffmpegUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl-shared.zip"
+          Invoke-WebRequest -Uri $ffmpegUrl -OutFile "$env:TEMP/ffmpeg.zip"
+          Expand-Archive -Path "$env:TEMP/ffmpeg.zip" -DestinationPath "$env:TEMP/ffmpeg_extract" -Force
+          $root = Get-ChildItem "$env:TEMP/ffmpeg_extract" -Directory | Select-Object -First 1
+          $binDir = Join-Path $root.FullName "bin"
+          if (-not (Test-Path $binDir)) { throw "No se encontró carpeta bin dentro del zip de FFmpeg" }
+          Copy-Item -Path "$binDir\*" -Destination "dependencies/windows/bin" -Recurse -Force
+
+      - name: Stage yt-dlp + FFmpeg (macOS)
+        if: runner.os == 'macOS'
+        working-directory: ${{ github.workspace }}
+        run: |
+          mkdir -p dependencies/mac/bin
+          brew install ffmpeg
+          FFMPEG_PREFIX="$(brew --prefix ffmpeg)"
+          cp "$FFMPEG_PREFIX/bin/ffmpeg" "$FFMPEG_PREFIX/bin/ffprobe" dependencies/mac/bin/
+          chmod +x dependencies/mac/bin/ffmpeg dependencies/mac/bin/ffprobe
+
+          curl -fsSL -o dependencies/mac/yt-dlp \
+            "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos"
+          chmod +x dependencies/mac/yt-dlp
+
+      - name: Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install npm deps
+        run: npm ci
+
+      - name: Build Tauri
+        run: npm run build
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: descargador-youtube-${{ runner.os }}
+          path: |
+            app/src-tauri/target/release/bundle/**/*.dmg
+            app/src-tauri/target/release/bundle/**/*.app
+            app/src-tauri/target/release/bundle/**/*.msi
+            app/src-tauri/target/release/bundle/**/*.exe
+          if-no-files-found: warn
