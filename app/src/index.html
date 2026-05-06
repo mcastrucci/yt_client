@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Descargador YouTube</title>
+    <script type="module" src="/main.js" defer></script>
+  </head>
+
+  <body>
+    <main class="container">
+      <header class="hero">
+        <h1>Descargador YouTube</h1>
+      </header>
+
+      <section class="card" aria-labelledby="folder-label">
+        <h2 class="card-title" id="folder-heading">Salida</h2>
+        <div class="folder-block">
+          <span class="label" id="folder-label">Guardar descargas en</span>
+          <div class="folder-row">
+            <code class="folder-path" id="folder-path" title=""></code>
+          </div>
+          <div class="folder-actions">
+            <button type="button" class="btn-secondary" id="pick-folder-btn">
+              Elegir carpeta…
+            </button>
+            <button type="button" class="btn-outline" id="open-folder-btn">
+              Abrir carpeta
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="format-label">
+        <h2 class="card-title">Descarga</h2>
+        <form class="form" id="dl-form" action="#" method="get">
+          <span class="label" id="format-label">Formato</span>
+          <div class="segmented" role="radiogroup" aria-labelledby="format-label">
+            <label class="seg-option">
+              <input
+                type="radio"
+                name="format"
+                value="audio"
+                checked
+              />
+              <span>Audio (MP3)</span>
+            </label>
+            <label class="seg-option">
+              <input type="radio" name="format" value="video" />
+              <span>Vídeo</span>
+            </label>
+          </div>
+
+          <label class="label" for="url-input">Enlace de YouTube</label>
+          <input
+            id="url-input"
+            name="url"
+            type="url"
+            class="url-input"
+            placeholder="https://www.youtube.com/watch?v=…"
+            autocomplete="off"
+            aria-describedby="url-hint"
+          />
+          <p class="input-hint" id="url-hint">
+            Pega un enlace de YouTube (vídeo, Shorts, Música o una lista). Solo se aceptan
+            direcciones de <code>youtube.com</code> y <code>youtu.be</code>.
+          </p>
+          <div class="row">
+            <button type="submit" class="btn-primary" id="submit-btn">Descargar</button>
+          </div>
+        </form>
+      </section>
+
+      <div class="card progress-wrap" id="progress-wrap" hidden>
+        <h2 class="card-title">Progreso</h2>
+        <div class="progress-bar-row">
+          <progress id="progress-bar" class="indeterminate" max="100"></progress>
+        </div>
+        <p class="progress-label" id="progress-label" aria-live="polite">Iniciando…</p>
+      </div>
+
+      <section class="card card--log" aria-label="Registro de descarga">
+        <div class="log-header">
+          <h2 class="card-title log-card-title">Registro</h2>
+          <button type="button" class="btn-outline btn-small" id="copy-log-btn">
+            Copiar registro
+          </button>
+        </div>
+        <pre id="log" class="log" aria-live="polite"></pre>
+        <div class="post-download-actions" id="post-download-wrap" hidden>
+          <button type="button" class="btn-outline" id="open-file-btn">
+            Abrir archivo
+          </button>
+          <button type="button" class="btn-outline" id="reveal-file-btn">
+            Mostrar en carpeta
+          </button>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

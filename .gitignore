@@ -1,0 +1,26 @@
+.DS_Store
+*.log
+
+# Frontend / Node (app/)
+app/node_modules/
+app/dist/
+
+# Rust / Tauri (app/src-tauri/)
+app/src-tauri/target/
+app/src-tauri/gen/schemas/
+
+# Editor
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Env / local
+.env
+.env.*
+*.local
+
+# Binarios en dependencies/ (descargar según dependencies/*/README.md)
+dependencies/mac/*
+!dependencies/mac/README.md
+dependencies/windows/*
+!dependencies/windows/README.md
